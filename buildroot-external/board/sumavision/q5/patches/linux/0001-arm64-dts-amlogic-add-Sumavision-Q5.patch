@@ -18,10 +18,10 @@ index e96c1e0..f7b3430 100644
  dtb-$(CONFIG_ARCH_MESON) += meson-gxl-s905w-tx3-mini.dtb
 diff --git a/arch/arm64/boot/dts/amlogic/meson-gxl-s905m2-sumavision-q5.dts b/arch/arm64/boot/dts/amlogic/meson-gxl-s905m2-sumavision-q5.dts
 new file mode 100644
-index 0000000..4f572df
+index 0000000..74917a9
 --- /dev/null
 +++ b/arch/arm64/boot/dts/amlogic/meson-gxl-s905m2-sumavision-q5.dts
-@@ -0,0 +1,253 @@
+@@ -0,0 +1,259 @@
 +// SPDX-License-Identifier: (GPL-2.0+ OR MIT)
 +/*
 + * Sumavision Q5 (Amlogic S905M2 / GXL, 1 GB RAM, 8 GB eMMC)
@@ -88,14 +88,19 @@ index 0000000..4f572df
 +		};
 +	};
 +
-+	/* Кнопка питания на GPIOAO_2 (заводской gpio_keypad) */
++	/*
++	 * Единственная кнопка платы (reset) на GPIOAO_2, в заводском gpio_keypad
++	 * она объявлена как power. Здесь - KEY_RESTART: в HAOS logind по долгому
++	 * нажатию (HandleRebootKeyLongPress) перезагружает систему. KEY_POWER
++	 * выключал бы её, а выключиться программно Q5 не умеет и просто зависает.
++	 */
 +	gpio-keys-polled {
 +		compatible = "gpio-keys-polled";
 +		poll-interval = <100>;
 +
-+		power-button {
-+			label = "power";
-+			linux,code = <KEY_POWER>;
++		reset-button {
++			label = "reset";
++			linux,code = <KEY_RESTART>;
 +			gpios = <&gpio_ao GPIOAO_2 GPIO_ACTIVE_LOW>;
 +		};
 +	};
@@ -118,7 +123,8 @@ index 0000000..4f572df
 +			color = <LED_COLOR_ID_BLUE>;
 +			function = LED_FUNCTION_STATUS;
 +			gpios = <&gpio_ao GPIOAO_3 GPIO_ACTIVE_LOW>;
-+			linux,default-trigger = "heartbeat";
++			/* частота мигания растёт с загрузкой процессора */
++			linux,default-trigger = "activity";
 +		};
 +	};
 +

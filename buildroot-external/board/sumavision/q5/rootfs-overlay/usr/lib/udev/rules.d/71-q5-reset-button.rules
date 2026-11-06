@@ -1,0 +1,4 @@
+# Sumavision Q5: the board button (gpio-keys-polled, KEY_RESTART) must be
+# watched by systemd-logind, which reboots on a long press
+# (HandleRebootKeyLongPress=reboot in /etc/systemd/logind.conf).
+SUBSYSTEM=="input", KERNEL=="event*", ATTRS{name}=="gpio-keys-polled", TAG+="power-switch"

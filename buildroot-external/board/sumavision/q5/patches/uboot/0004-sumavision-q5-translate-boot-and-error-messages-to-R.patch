@@ -1,0 +1,523 @@
+From: Wint <Wint-Tele100gramm@users.noreply.github.com>
+Subject: [PATCH] sumavision-q5: translate boot and error messages to Russian
+
+Distro boot scan, file loading, MMC read/write, device tree, kernel
+start, environment import, partition and unknown command messages.
+---
+diff --git a/arch/arm/lib/image.c b/arch/arm/lib/image.c
+index 2268661d..ea932566 100644
+--- a/arch/arm/lib/image.c
++++ b/arch/arm/lib/image.c
+@@ -40,7 +40,7 @@ int booti_setup(ulong image, ulong *relocated_addr, ulong *size,
+ 	ih = (struct Image_header *)map_sysmem(image, 0);
+ 
+ 	if (ih->magic != le32_to_cpu(LINUX_ARM64_IMAGE_MAGIC)) {
+-		puts("Bad Linux ARM64 Image magic!\n");
++		puts("Неверная сигнатура образа ядра Linux ARM64!\n");
+ 		return 1;
+ 	}
+ 
+diff --git a/arch/arm/lib/reset.c b/arch/arm/lib/reset.c
+index c9796a44..7f2704b2 100644
+--- a/arch/arm/lib/reset.c
++++ b/arch/arm/lib/reset.c
+@@ -32,7 +32,7 @@ __weak void reset_misc(void)
+ 
+ int do_reset(struct cmd_tbl *cmdtp, int flag, int argc, char *const argv[])
+ {
+-	puts ("resetting ...\n");
++	puts ("перезагрузка ...\n");
+ 	flush();
+ 
+ 	disable_interrupts();
+diff --git a/boot/bootm.c b/boot/bootm.c
+index 3bce8586..c68d83f7 100644
+--- a/boot/bootm.c
++++ b/boot/bootm.c
+@@ -85,7 +85,7 @@ static struct legacy_img_hdr *image_get_kernel(ulong img_addr, int verify)
+ 	image_print_contents(hdr);
+ 
+ 	if (verify) {
+-		puts("   Verifying Checksum ... ");
++		puts("   Проверка контрольной суммы ... ");
+ 		if (!image_check_dcrc(hdr)) {
+ 			printf("Bad Data CRC\n");
+ 			bootstage_error(BOOTSTAGE_ID_CHECK_CHECKSUM);
+@@ -317,7 +317,7 @@ static int bootm_find_os(const char *cmd_name, const char *addr_fit)
+ 			      &images.os.image_len, &os_hdr);
+ 	if (ret) {
+ 		if (ret == -EPROTOTYPE)
+-			printf("Wrong Image Type for %s command\n", cmd_name);
++			printf("Неверный тип образа для команды %s\n", cmd_name);
+ 
+ 		printf("ERROR %dE: can't get kernel image!\n", ret);
+ 		return 1;
+@@ -733,7 +733,7 @@ static int bootm_load_os(struct bootm_headers *images, int boot_progress)
+ 
+ 		/* Handle BOOTM_STATE_LOADOS */
+ 		if (relocated_addr != load) {
+-			printf("Moving Image from 0x%lx to 0x%lx, end=0x%lx\n",
++			printf("Перемещение ядра из 0x%lx в 0x%lx, конец 0x%lx\n",
+ 			       load, relocated_addr,
+ 			       relocated_addr + image_size);
+ 			memmove((void *)relocated_addr, load_buf, image_size);
+@@ -1244,7 +1244,7 @@ void __weak switch_to_non_secure_mode(void)
+ 
+ void bootm_final(int flag)
+ {
+-	printf("\nStarting kernel ...%s\n\n",
++	printf("\nЗапуск ядра ...%s\n\n",
+ 	       (flag & BOOTM_STATE_OS_FAKE_GO) ?
+ 	       " (fake run for tracing)" : "");
+ 
+diff --git a/boot/fdt_support.c b/boot/fdt_support.c
+index 2941df55..ee27e4aa 100644
+--- a/boot/fdt_support.c
++++ b/boot/fdt_support.c
+@@ -2231,7 +2231,7 @@ int fdt_valid(struct fdt_header **blobp)
+ 		return 1;	/* valid */
+ 
+ 	if (err < 0) {
+-		printf("libfdt fdt_check_header(): %s", fdt_strerror(err));
++		printf("Дерево устройств повреждено или не загружено (fdt_check_header): %s", fdt_strerror(err));
+ 		/*
+ 		 * Be more informative on bad version.
+ 		 */
+diff --git a/boot/image-board.c b/boot/image-board.c
+index edf4a955..f817d314 100644
+--- a/boot/image-board.c
++++ b/boot/image-board.c
+@@ -62,7 +62,7 @@ static const struct legacy_img_hdr *image_get_ramdisk(ulong rd_addr, u8 arch,
+ 	image_print_contents(rd_hdr);
+ 
+ 	if (verify) {
+-		puts("   Verifying Checksum ... ");
++		puts("   Проверка контрольной суммы ... ");
+ 		if (!image_check_dcrc(rd_hdr)) {
+ 			puts("Bad Data CRC\n");
+ 			bootstage_error(BOOTSTAGE_ID_RD_CHECKSUM);
+@@ -370,7 +370,7 @@ static int select_ramdisk(struct bootm_headers *images, const char *select, u8 a
+ 		if (CONFIG_IS_ENABLED(LEGACY_IMAGE_FORMAT)) {
+ 			const struct legacy_img_hdr *rd_hdr;
+ 
+-			printf("## Loading init Ramdisk from Legacy Image at %08lx ...\n",
++			printf("## Загрузка initramfs из образа Legacy по адресу %08lx ...\n",
+ 			       rd_addr);
+ 
+ 			bootstage_mark(BOOTSTAGE_ID_CHECK_RAMDISK);
+@@ -588,7 +588,7 @@ int boot_ramdisk_high(ulong rd_data, ulong rd_len, ulong *initrd_start,
+ 			bootstage_mark(BOOTSTAGE_ID_COPY_RAMDISK);
+ 
+ 			*initrd_end = *initrd_start + rd_len;
+-			printf("   Loading Ramdisk to %08lx, end %08lx ... ",
++			printf("   Загрузка initramfs в %08lx, конец %08lx ... ",
+ 			       *initrd_start, *initrd_end);
+ 
+ 			memmove_wd((void *)*initrd_start,
+diff --git a/boot/image-fdt.c b/boot/image-fdt.c
+index 956a3d97..38d1bb37 100644
+--- a/boot/image-fdt.c
++++ b/boot/image-fdt.c
+@@ -29,7 +29,7 @@ DECLARE_GLOBAL_DATA_PTR;
+ 
+ static void fdt_error(const char *msg)
+ {
+-	puts("ERROR: ");
++	puts("ОШИБКА: ");
+ 	puts(msg);
+ 	puts(" - must RESET the board to recover.\n");
+ }
+@@ -41,7 +41,7 @@ static const struct legacy_img_hdr *image_get_fdt(ulong fdt_addr)
+ 
+ 	image_print_contents(fdt_hdr);
+ 
+-	puts("   Verifying Checksum ... ");
++	puts("   Проверка контрольной суммы ... ");
+ 	if (!image_check_hcrc(fdt_hdr)) {
+ 		fdt_error("fdt header checksum invalid");
+ 		return NULL;
+@@ -310,7 +310,7 @@ int boot_relocate_fdt(char **of_flat_tree, ulong *of_size)
+ 		debug("## device tree at %p ... %p (len=%ld [0x%lX])\n",
+ 		      fdt_blob, fdt_blob + *of_size - 1, of_len, of_len);
+ 
+-		printf("   Loading Device Tree to %p, end %p ... ",
++		printf("   Загрузка дерева устройств в %p, конец %p ... ",
+ 		       of_start, of_start + of_len - 1);
+ 
+ 		err = fdt_open_into(fdt_blob, of_start, of_len);
+@@ -486,12 +486,12 @@ static int select_fdt(struct bootm_headers *images, const char *select, u8 arch,
+ 			 * FDT blob
+ 			 */
+ 			debug("*  fdt: raw FDT blob\n");
+-			printf("## Flattened Device Tree blob at %08lx\n",
++			printf("## Дерево устройств по адресу %08lx\n",
+ 			       (long)fdt_addr);
+ 		}
+ 		break;
+ 	default:
+-		puts("ERROR: Did not find a cmdline Flattened Device Tree\n");
++		puts("ОШИБКА: не найдено дерево устройств, указанное в команде\n");
+ 		return -ENOENT;
+ 	}
+ 	*fdt_addrp = fdt_addr;
+@@ -517,7 +517,7 @@ int boot_get_fdt(void *buf, const char *select, uint arch,
+ 			goto no_fdt;
+ 		else if (ret)
+ 			return 1;
+-		printf("   Booting using the fdt blob at %#08lx\n", fdt_addr);
++		printf("   Загрузка с деревом устройств по адресу %#08lx\n", fdt_addr);
+ 		fdt_blob = map_sysmem(fdt_addr, 0);
+ 	} else if (images->legacy_hdr_valid &&
+ 			image_check_type(&images->legacy_hdr_os_copy,
+diff --git a/boot/image.c b/boot/image.c
+index 185d52ba..ac055f5f 100644
+--- a/boot/image.c
++++ b/boot/image.c
+@@ -363,17 +363,17 @@ void image_print_contents(const void *ptr)
+ 	const char __maybe_unused *p;
+ 
+ 	p = IMAGE_INDENT_STRING;
+-	printf("%sImage Name:   %.*s\n", p, IH_NMLEN, image_get_name(hdr));
++	printf("%sИмя образа:     %.*s\n", p, IH_NMLEN, image_get_name(hdr));
+ 	if (IMAGE_ENABLE_TIMESTAMP) {
+ 		printf("%sCreated:      ", p);
+ 		genimg_print_time((time_t)image_get_time(hdr));
+ 	}
+-	printf("%sImage Type:   ", p);
++	printf("%sТип образа:     ", p);
+ 	image_print_type(hdr);
+-	printf("%sData Size:    ", p);
++	printf("%sРазмер данных:  ", p);
+ 	genimg_print_size(image_get_data_size(hdr));
+-	printf("%sLoad Address: %08x\n", p, image_get_load(hdr));
+-	printf("%sEntry Point:  %08x\n", p, image_get_ep(hdr));
++	printf("%sАдрес загрузки: %08x\n", p, image_get_load(hdr));
++	printf("%sТочка входа:    %08x\n", p, image_get_ep(hdr));
+ 
+ 	if (image_check_type(hdr, IH_TYPE_MULTI) ||
+ 			image_check_type(hdr, IH_TYPE_SCRIPT)) {
+diff --git a/cmd/booti.c b/cmd/booti.c
+index e6f67d6e..83284171 100644
+--- a/cmd/booti.c
++++ b/cmd/booti.c
+@@ -80,7 +80,7 @@ static int booti_start(struct bootm_info *bmi)
+ 
+ 	/* Handle BOOTM_STATE_LOADOS */
+ 	if (relocated_addr != ld) {
+-		printf("Moving Image from 0x%lx to 0x%lx, end=0x%lx\n", ld,
++		printf("Перемещение ядра из 0x%lx в 0x%lx, конец 0x%lx\n", ld,
+ 		       relocated_addr, relocated_addr + image_size);
+ 		memmove((void *)relocated_addr, (void *)ld, image_size);
+ 	}
+diff --git a/cmd/fdt.c b/cmd/fdt.c
+index 7e2abf96..be92eb1c 100644
+--- a/cmd/fdt.c
++++ b/cmd/fdt.c
+@@ -47,7 +47,7 @@ static void set_working_fdt_addr_quiet(ulong addr)
+ 
+ void set_working_fdt_addr(ulong addr)
+ {
+-	printf("Working FDT set to %lx\n", addr);
++	printf("Рабочее дерево устройств: %lx\n", addr);
+ 	set_working_fdt_addr_quiet(addr);
+ }
+ 
+@@ -282,9 +282,9 @@ static int do_fdt(struct cmd_tbl *cmdtp, int flag, int argc, char *const argv[])
+ 	}
+ 
+ 	if (!working_fdt) {
+-		puts("No FDT memory address configured. Please configure\n"
+-		     "the FDT address via \"fdt addr <address>\" command.\n"
+-		     "Aborting!\n");
++		puts("Адрес дерева устройств не задан. Укажите его\n"
++		     "командой \"fdt addr <адрес>\".\n"
++		     "Прервано!\n");
+ 		return CMD_RET_FAILURE;
+ 	}
+ 
+diff --git a/cmd/mmc.c b/cmd/mmc.c
+index 6a12d683..752eb4d2 100644
+--- a/cmd/mmc.c
++++ b/cmd/mmc.c
+@@ -366,11 +366,11 @@ static int do_mmc_read(struct cmd_tbl *cmdtp, int flag,
+ 	if (!mmc)
+ 		return CMD_RET_FAILURE;
+ 
+-	printf("MMC read: dev # %d, block # %d, count %d ... ",
++	printf("MMC: чтение, устройство %d, блок %d, блоков %d ... ",
+ 	       curr_device, blk, cnt);
+ 
+ 	n = blk_dread(mmc_get_blk_desc(mmc), blk, cnt, ptr);
+-	printf("%d blocks read: %s\n", n, (n == cnt) ? "OK" : "ERROR");
++	printf("прочитано %d: %s\n", n, (n == cnt) ? "OK" : "ОШИБКА");
+ 	unmap_sysmem(ptr);
+ 
+ 	return (n == cnt) ? CMD_RET_SUCCESS : CMD_RET_FAILURE;
+@@ -460,7 +460,7 @@ static int do_mmc_write(struct cmd_tbl *cmdtp, int flag,
+ 	if (!mmc)
+ 		return CMD_RET_FAILURE;
+ 
+-	printf("MMC write: dev # %d, block # %d, count %d ... ",
++	printf("MMC: запись, устройство %d, блок %d, блоков %d ... ",
+ 	       curr_device, blk, cnt);
+ 
+ 	if (mmc_getwp(mmc) == 1) {
+@@ -468,7 +468,7 @@ static int do_mmc_write(struct cmd_tbl *cmdtp, int flag,
+ 		return CMD_RET_FAILURE;
+ 	}
+ 	n = blk_dwrite(mmc_get_blk_desc(mmc), blk, cnt, ptr);
+-	printf("%d blocks written: %s\n", n, (n == cnt) ? "OK" : "ERROR");
++	printf("записано %d: %s\n", n, (n == cnt) ? "OK" : "ОШИБКА");
+ 	unmap_sysmem(ptr);
+ 
+ 	return (n == cnt) ? CMD_RET_SUCCESS : CMD_RET_FAILURE;
+diff --git a/cmd/nvedit.c b/cmd/nvedit.c
+index 636bddee..d6ae25e4 100644
+--- a/cmd/nvedit.c
++++ b/cmd/nvedit.c
+@@ -863,7 +863,7 @@ static int do_env_import(struct cmd_tbl *cmdtp, int flag,
+ 		memcpy(&crc, &ep->crc, sizeof(crc));
+ 
+ 		if (crc32(0, ep->data, size) != crc) {
+-			puts("## Error: bad CRC, import failed\n");
++			puts("## Ошибка: неверная контрольная сумма, импорт не выполнен\n");
+ 			return 1;
+ 		}
+ 		ptr = (char *)ep->data;
+@@ -871,7 +871,7 @@ static int do_env_import(struct cmd_tbl *cmdtp, int flag,
+ 
+ 	if (!himport_r(&env_htab, ptr, size, sep, del ? 0 : H_NOCLEAR,
+ 		       crlf_is_lf, wl ? argc - 2 : 0, wl ? &argv[2] : NULL)) {
+-		pr_err("## Error: Environment import failed: errno = %d\n",
++		pr_err("## Ошибка: импорт переменных окружения не удался: errno = %d\n",
+ 		       errno);
+ 		return 1;
+ 	}
+diff --git a/common/cli_hush.c b/common/cli_hush.c
+index fe8fe93b..01903bb6 100644
+--- a/common/cli_hush.c
++++ b/common/cli_hush.c
+@@ -1664,8 +1664,8 @@ static int run_pipe_real(struct pipe *pi)
+ 		 * "help;flinfo" must not execute
+ 		 */
+ 		if (strchr(child->argv[i], ';')) {
+-			printf("Unknown command '%s' - try 'help' or use "
+-					"'run' command\n", child->argv[i]);
++			printf("Неизвестная команда '%s', см. 'help' "
++					"или используйте 'run'\n", child->argv[i]);
+ 			return -1;
+ 		}
+ 		/* Process the command */
+diff --git a/common/command.c b/common/command.c
+index eb2c2123..4bede18c 100644
+--- a/common/command.c
++++ b/common/command.c
+@@ -82,7 +82,7 @@ int _do_help(struct cmd_tbl *cmd_start, int cmd_items, struct cmd_tbl *cmdtp,
+ 		if (cmdtp != NULL) {
+ 			rcode |= cmd_usage(cmdtp);
+ 		} else {
+-			printf("Unknown command '%s' - try 'help' without arguments for list of all known commands\n\n",
++			printf("Неизвестная команда '%s', список команд: 'help' без аргументов\n\n",
+ 			       argv[i]);
+ 			rcode = 1;
+ 		}
+@@ -612,7 +612,7 @@ enum command_ret_t cmd_process(int flag, int argc, char *const argv[],
+ 	/* Look up command in command table */
+ 	cmdtp = find_cmd(argv[0]);
+ 	if (cmdtp == NULL) {
+-		printf("Unknown command '%s' - try 'help'\n", argv[0]);
++		printf("Неизвестная команда '%s', см. 'help'\n", argv[0]);
+ 		return 1;
+ 	}
+ 
+diff --git a/disk/part.c b/disk/part.c
+index b28523df..eeb0b7f3 100644
+--- a/disk/part.c
++++ b/disk/part.c
+@@ -412,7 +412,7 @@ int blk_get_device_by_str(const char *ifname, const char *dev_hwpart_str,
+ 
+ 	dev = hextoul(dev_str, &ep);
+ 	if (*ep) {
+-		printf("** Bad device specification %s %s **\n",
++		printf("** Неверно указано устройство %s %s **\n",
+ 		       ifname, dev_str);
+ 		dev = -EINVAL;
+ 		goto cleanup;
+@@ -421,7 +421,7 @@ int blk_get_device_by_str(const char *ifname, const char *dev_hwpart_str,
+ 	if (hwpart_str) {
+ 		hwpart = hextoul(hwpart_str, &ep);
+ 		if (*ep) {
+-			printf("** Bad HW partition specification %s %s **\n",
++			printf("** Неверно указан аппаратный раздел %s %s **\n",
+ 			    ifname, hwpart_str);
+ 			dev = -EINVAL;
+ 			goto cleanup;
+@@ -508,7 +508,7 @@ int blk_get_device_part_str(const char *ifname, const char *dev_part_str,
+ 
+ 	/* If still no dev_part_str, it's an error */
+ 	if (!dev_part_str) {
+-		printf("** No device specified **\n");
++		printf("** Устройство не указано **\n");
+ 		ret = -ENODEV;
+ 		goto cleanup;
+ 	}
+@@ -527,7 +527,7 @@ int blk_get_device_part_str(const char *ifname, const char *dev_part_str,
+ 	/* Look up the device */
+ 	dev = blk_get_device_by_str(ifname, dev_str, desc);
+ 	if (dev < 0) {
+-		printf("** Bad device specification %s %s **\n",
++		printf("** Неверно указано устройство %s %s **\n",
+ 		       ifname, dev_str);
+ 		ret = dev;
+ 		goto cleanup;
+@@ -546,7 +546,7 @@ int blk_get_device_part_str(const char *ifname, const char *dev_part_str,
+ 		 * or request for whole device, but caller requires partition.
+ 		 */
+ 		if (*ep || (part == 0 && !allow_whole_dev)) {
+-			printf("** Bad partition specification %s %s **\n",
++			printf("** Неверно указан раздел %s %s **\n",
+ 			    ifname, dev_part_str);
+ 			ret = -ENOENT;
+ 			goto cleanup;
+@@ -559,7 +559,7 @@ int blk_get_device_part_str(const char *ifname, const char *dev_part_str,
+ 	 */
+ 	if (((*desc)->part_type == PART_TYPE_UNKNOWN) || !part) {
+ 		if (!(*desc)->lba) {
+-			printf("** Bad device size - %s %s **\n", ifname,
++			printf("** Неверный размер устройства: %s %s **\n", ifname,
+ 			       dev_str);
+ 			ret = -EINVAL;
+ 			goto cleanup;
+@@ -599,7 +599,7 @@ int blk_get_device_part_str(const char *ifname, const char *dev_part_str,
+ 	if (part != PART_AUTO) {
+ 		ret = part_get_info(*desc, part, info);
+ 		if (ret) {
+-			printf("** Invalid partition %d **\n", part);
++			printf("** Нет раздела %d **\n", part);
+ 			goto cleanup;
+ 		}
+ 	} else {
+@@ -641,7 +641,7 @@ int blk_get_device_part_str(const char *ifname, const char *dev_part_str,
+ 			if (p == MAX_SEARCH_PARTITIONS + 1)
+ 				*info = tmpinfo;
+ 		} else {
+-			printf("** No valid partitions found **\n");
++			printf("** Не найдено ни одного раздела **\n");
+ 			goto cleanup;
+ 		}
+ 	}
+diff --git a/fs/fs.c b/fs/fs.c
+index 2824c7de..19132965 100644
+--- a/fs/fs.c
++++ b/fs/fs.c
+@@ -642,7 +642,7 @@ static int fs_read_lmb_check(const char *filename, ulong addr, loff_t offset,
+ 			   LMB_NONE))
+ 		return 0;
+ 
+-	log_err("** Reading file would overwrite reserved memory **\n");
++	log_err("** Чтение файла затёрло бы зарезервированную память **\n");
+ 	return -ENOSPC;
+ }
+ #endif
+@@ -696,7 +696,7 @@ int fs_write(const char *filename, ulong addr, loff_t offset, loff_t len,
+ 	unmap_sysmem(buf);
+ 
+ 	if (ret < 0 && len != *actwrite) {
+-		log_err("** Unable to write file %s **\n", filename);
++		log_err("** Не удалось записать файл %s **\n", filename);
+ 		ret = -1;
+ 	}
+ 	fs_close();
+@@ -852,7 +852,7 @@ int do_load(struct cmd_tbl *cmdtp, int flag, int argc, char *const argv[],
+ 		return CMD_RET_USAGE;
+ 
+ 	if (fs_set_blk_dev(argv[1], cmd_arg2(argc, argv), fstype)) {
+-		log_err("Can't set block device\n");
++		log_err("Не удалось открыть раздел (нет раздела или неизвестная файловая система)\n");
+ 		return 1;
+ 	}
+ 
+@@ -872,7 +872,7 @@ int do_load(struct cmd_tbl *cmdtp, int flag, int argc, char *const argv[],
+ 	} else {
+ 		filename = env_get("bootfile");
+ 		if (!filename) {
+-			puts("** No boot file defined **\n");
++			puts("** Не задан файл для загрузки **\n");
+ 			return 1;
+ 		}
+ 	}
+@@ -889,7 +889,7 @@ int do_load(struct cmd_tbl *cmdtp, int flag, int argc, char *const argv[],
+ 	ret = _fs_read(filename, addr, pos, bytes, 1, &len_read);
+ 	time = get_timer(time);
+ 	if (ret < 0) {
+-		log_err("Failed to load '%s'\n", filename);
++		log_err("Не удалось загрузить '%s'\n", filename);
+ 		return 1;
+ 	}
+ 
+@@ -897,7 +897,7 @@ int do_load(struct cmd_tbl *cmdtp, int flag, int argc, char *const argv[],
+ 			(argc > 4) ? argv[4] : "", map_sysmem(addr, 0),
+ 			len_read);
+ 
+-	printf("%llu bytes read in %lu ms", len_read, time);
++	printf("Прочитано %llu байт за %lu мс", len_read, time);
+ 	if (time > 0) {
+ 		puts(" (");
+ 		print_size(div_u64(len_read, time) * 1000, "/s");
+@@ -968,7 +968,7 @@ int do_save(struct cmd_tbl *cmdtp, int flag, int argc, char *const argv[],
+ 	if (ret < 0)
+ 		return 1;
+ 
+-	printf("%llu bytes written in %lu ms", len, time);
++	printf("Записано %llu байт за %lu мс", len, time);
+ 	if (time > 0) {
+ 		puts(" (");
+ 		print_size(div_u64(len, time) * 1000, "/s");
+diff --git a/include/config_distro_bootcmd.h b/include/config_distro_bootcmd.h
+index 8d6f80a0..da50a7cc 100644
+--- a/include/config_distro_bootcmd.h
++++ b/include/config_distro_bootcmd.h
+@@ -182,10 +182,10 @@
+ 		"run boot_efi_bootmgr;"                                   \
+ 		"if test -e ${devtype} ${devnum}:${distro_bootpart} "     \
+ 					"efi/boot/"BOOTEFI_NAME"; then "  \
+-				"echo Found EFI removable media binary "  \
++				"echo Найден EFI-загрузчик съёмного носителя "  \
+ 					"efi/boot/"BOOTEFI_NAME"; "       \
+ 				"run boot_efi_binary; "                   \
+-				"echo EFI LOAD FAILED: continuing...; "   \
++				"echo Ошибка загрузки EFI, продолжаю...; "   \
+ 		"fi; "                                                    \
+ 		"setenv efi_fdtfile\0"
+ #define SCAN_DEV_FOR_EFI "run scan_dev_for_efi;"
+@@ -510,9 +510,9 @@
+ 		"if test -e ${devtype} "                                  \
+ 				"${devnum}:${distro_bootpart} "           \
+ 				"${prefix}${boot_syslinux_conf}; then "   \
+-			"echo Found ${prefix}${boot_syslinux_conf}; "     \
++			"echo Найден ${prefix}${boot_syslinux_conf}; "     \
+ 			"run boot_extlinux; "                             \
+-			"echo EXTLINUX FAILED: continuing...; "           \
++			"echo Ошибка EXTLINUX, продолжаю...; "           \
+ 		"fi\0"                                                    \
+ 	\
+ 	"boot_a_script="                                                  \
+@@ -525,15 +525,15 @@
+ 			"if test -e ${devtype} "                          \
+ 					"${devnum}:${distro_bootpart} "   \
+ 					"${prefix}${script}; then "       \
+-				"echo Found U-Boot script "               \
++				"echo Найден сценарий U-Boot "               \
+ 					"${prefix}${script}; "            \
+ 				"run boot_a_script; "                     \
+-				"echo SCRIPT FAILED: continuing...; "     \
++				"echo Ошибка сценария, продолжаю...; "     \
+ 			"fi; "                                            \
+ 		"done\0"                                                  \
+ 	\
+ 	"scan_dev_for_boot="                                              \
+-		"echo Scanning ${devtype} "                               \
++		"echo Поиск на ${devtype} "                               \
+ 				"${devnum}:${distro_bootpart}...; "       \
+ 		"for prefix in ${boot_prefixes}; do "                     \
+ 			"run scan_dev_for_extlinux; "                     \
