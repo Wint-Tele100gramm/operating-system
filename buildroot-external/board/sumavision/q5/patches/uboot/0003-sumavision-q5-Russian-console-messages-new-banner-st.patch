@@ -1,0 +1,442 @@
+From 124de54255b130bee30808e1a1f47c0507538788 Mon Sep 17 00:00:00 2001
+From: Sumavision Q5 build <q5@localhost>
+Date: Tue, 3 Nov 2026 23:38:06 +0300
+Subject: [PATCH 3/5] sumavision-q5: Russian console messages, new banner, stop
+ autoboot only with Ctrl+C
+
+---
+ arch/arm/mach-meson/board-info.c | 2 +-
+ boot/image-board.c               | 2 +-
+ boot/pxe_utils.c                 | 2 +-
+ cmd/mmc.c                        | 6 +++---
+ cmd/source.c                     | 2 +-
+ cmd/usb.c                        | 2 +-
+ common/autoboot.c                | 2 +-
+ common/board_f.c                 | 2 +-
+ common/board_info.c              | 4 ++--
+ common/board_r.c                 | 8 ++++----
+ common/console.c                 | 6 +++---
+ common/usb_storage.c             | 4 ++--
+ configs/sumavision-q5_defconfig  | 6 +++++-
+ disk/part.c                      | 4 ++--
+ drivers/block/blk-uclass.c       | 2 +-
+ drivers/mmc/mmc.c                | 2 +-
+ drivers/net/designware.c         | 2 +-
+ drivers/net/phy/phy.c            | 8 ++++----
+ drivers/usb/host/usb-uclass.c    | 2 +-
+ env/common.c                     | 2 +-
+ env/env.c                        | 4 ++--
+ include/configs/meson64.h        | 2 +-
+ net/bootp.c                      | 2 +-
+ 23 files changed, 41 insertions(+), 37 deletions(-)
+
+diff --git a/arch/arm/mach-meson/board-info.c b/arch/arm/mach-meson/board-info.c
+index d3807dc7..6e5466ec 100644
+--- a/arch/arm/mach-meson/board-info.c
++++ b/arch/arm/mach-meson/board-info.c
+@@ -169,7 +169,7 @@ int checkboard(void)
+ 	if (!socinfo)
+ 		return 0;
+ 
+-	printf("SoC:   Amlogic Meson %s (%s) Revision %x:%x (%x:%x)\n",
++	printf("Процессор:  Amlogic Meson %s (%s), ревизия %x:%x (%x:%x)\n",
+ 	       socinfo_to_soc_id(socinfo),
+ 	       socinfo_to_package_id(socinfo),
+ 	       socinfo_to_major(socinfo),
+diff --git a/boot/image-board.c b/boot/image-board.c
+index 67938fdd..edf4a955 100644
+--- a/boot/image-board.c
++++ b/boot/image-board.c
+@@ -1124,6 +1124,6 @@ fallback:
+ 	return 0;
+ 
+ exit_image_format:
+-	puts("Wrong image format for \"source\" command\n");
++	puts("Неверный формат образа для команды \"source\"\n");
+ 	return -EPERM;
+ }
+diff --git a/boot/pxe_utils.c b/boot/pxe_utils.c
+index 8c1310da..38f2156d 100644
+--- a/boot/pxe_utils.c
++++ b/boot/pxe_utils.c
+@@ -123,7 +123,7 @@ static int get_relfile(struct pxe_context *ctx, const char *file_path,
+ 
+ 	strcat(relfile, file_path);
+ 
+-	printf("Retrieving file: %s\n", relfile);
++	printf("Загрузка файла: %s\n", relfile);
+ 
+ 	sprintf(addr_buf, "%lx", file_addr);
+ 
+diff --git a/cmd/mmc.c b/cmd/mmc.c
+index 54c79989..6a12d683 100644
+--- a/cmd/mmc.c
++++ b/cmd/mmc.c
+@@ -605,16 +605,16 @@ static int do_mmc_dev(struct cmd_tbl *cmdtp, int flag,
+ 		return CMD_RET_FAILURE;
+ 
+ 	ret = blk_select_hwpart_devnum(UCLASS_MMC, dev, part);
+-	printf("switch to partitions #%d, %s\n",
++	printf("Переключение на раздел #%d, %s\n",
+ 	       part, (!ret) ? "OK" : "ERROR");
+ 	if (ret)
+ 		return CMD_RET_FAILURE;
+ 
+ 	curr_device = dev;
+ 	if (mmc->part_config == MMCPART_NOAVAILABLE)
+-		printf("mmc%d is current device\n", curr_device);
++		printf("mmc%d выбран текущим устройством\n", curr_device);
+ 	else
+-		printf("mmc%d(part %d) is current device\n",
++		printf("mmc%d (раздел %d) выбран текущим устройством\n",
+ 		       curr_device, mmc_get_blk_desc(mmc)->hwpart);
+ 
+ 	return CMD_RET_SUCCESS;
+diff --git a/cmd/source.c b/cmd/source.c
+index c9b5f8e4..845a1988 100644
+--- a/cmd/source.c
++++ b/cmd/source.c
+@@ -48,7 +48,7 @@ static int do_source(struct cmd_tbl *cmdtp, int flag, int argc,
+ 		debug("*  source: cmdline image address = 0x%08lx\n", addr);
+ 	}
+ 
+-	printf ("## Executing script at %08lx\n", addr);
++	printf ("## Выполнение сценария по адресу %08lx\n", addr);
+ 	rcode = cmd_source_script(addr, fit_uname, confname);
+ 	return rcode;
+ }
+diff --git a/cmd/usb.c b/cmd/usb.c
+index 13a2996c..eb312bbe 100644
+--- a/cmd/usb.c
++++ b/cmd/usb.c
+@@ -610,7 +610,7 @@ static int do_usb(struct cmd_tbl *cmdtp, int flag, int argc, char *const argv[])
+ 	if (strncmp(argv[1], "start", 5) == 0) {
+ 		if (usb_started)
+ 			return 0; /* Already started */
+-		printf("starting USB...\n");
++		printf("Запуск USB...\n");
+ 		do_usb_start();
+ 		return 0;
+ 	}
+diff --git a/common/autoboot.c b/common/autoboot.c
+index 4b80ddb5..642c7769 100644
+--- a/common/autoboot.c
++++ b/common/autoboot.c
+@@ -370,7 +370,7 @@ static int abortboot_key_sequence(int bootdelay)
+ 
+ static void print_boot_delay(int bootdelay)
+ {
+-	printf(ANSI_CLEAR_LINE "\rHit any key to stop autoboot: %d", bootdelay);
++	printf(ANSI_CLEAR_LINE "\rНажмите любую клавишу для остановки автозагрузки: %d", bootdelay);
+ }
+ 
+ static int abortboot_single_key(int bootdelay)
+diff --git a/common/board_f.c b/common/board_f.c
+index 9efcd949..913f789c 100644
+--- a/common/board_f.c
++++ b/common/board_f.c
+@@ -183,7 +183,7 @@ static int print_cpuinfo(void)
+ 
+ static int announce_dram_init(void)
+ {
+-	puts("DRAM:  ");
++	puts("ОЗУ:        ");
+ 	return 0;
+ }
+ 
+diff --git a/common/board_info.c b/common/board_info.c
+index dc26e1a3..c5f9a575 100644
+--- a/common/board_info.c
++++ b/common/board_info.c
+@@ -42,7 +42,7 @@ static int try_sysinfo(void)
+ 	ret = sysinfo_get_str(dev, SYSID_BOARD_MODEL, sizeof(str), str);
+ 	if (ret)
+ 		return ret;
+-	printf("Model: %s\n", str);
++	printf("Модель:     %s\n", str);
+ 
+ 	if (IS_ENABLED(CONFIG_SYSINFO_EXTRA)) {
+ 		const struct to_show *item;
+@@ -71,7 +71,7 @@ int show_board_info(void)
+ 
+ 			model = fdt_getprop(gd->fdt_blob, 0, "model", NULL);
+ 			if (model)
+-				printf("Model: %s\n", model);
++				printf("Модель:     %s\n", model);
+ 		}
+ 	}
+ 
+diff --git a/common/board_r.c b/common/board_r.c
+index a397e209..58415b2f 100644
+--- a/common/board_r.c
++++ b/common/board_r.c
+@@ -410,7 +410,7 @@ static int initr_onenand(void)
+ #ifdef CONFIG_MMC
+ static int initr_mmc(void)
+ {
+-	puts("MMC:   ");
++	puts("Накопители: ");
+ 	mmc_initialize(gd->bd);
+ 	return 0;
+ }
+@@ -498,7 +498,7 @@ static int initr_boot_led_on(void)
+ #if CONFIG_IS_ENABLED(NET)
+ static int initr_net(void)
+ {
+-	puts("Net:   ");
++	puts("Сеть:       ");
+ 	eth_initialize();
+ #if defined(CONFIG_RESET_PHY_R)
+ 	debug("Reset Ethernet PHY\n");
+@@ -549,10 +549,10 @@ static int dm_announce(void)
+ 
+ 	if (IS_ENABLED(CONFIG_DM)) {
+ 		dm_get_stats(&device_count, &uclass_count);
+-		printf("Core:  %d devices, %d uclasses", device_count,
++		printf("Ядро:       устройств %d, классов %d", device_count,
+ 		       uclass_count);
+ 		if (CONFIG_IS_ENABLED(OF_REAL))
+-			printf(", devicetree: %s", fdtdec_get_srcname());
++			printf(", дерево устройств: %s", fdtdec_get_srcname());
+ 		if (CONFIG_IS_ENABLED(UPL))
+ 			printf(", universal payload active");
+ 		printf("\n");
+diff --git a/common/console.c b/common/console.c
+index 54d12494..9973cea6 100644
+--- a/common/console.c
++++ b/common/console.c
+@@ -1094,13 +1094,13 @@ static void stdio_print_current_devices(void)
+ 	stderrname = stderrname ? : get_stdio(stderr);
+ 
+ 	/* Print information */
+-	puts("In:    ");
++	puts("Ввод:       ");
+ 	printf("%s\n", stdinname);
+ 
+-	puts("Out:   ");
++	puts("Вывод:      ");
+ 	printf("%s\n", stdoutname);
+ 
+-	puts("Err:   ");
++	puts("Ошибки:     ");
+ 	printf("%s\n", stderrname);
+ }
+ 
+diff --git a/common/usb_storage.c b/common/usb_storage.c
+index ac331f1c..944b08ad 100644
+--- a/common/usb_storage.c
++++ b/common/usb_storage.c
+@@ -316,7 +316,7 @@ void usb_stor_reset(void)
+ int usb_stor_scan(int mode)
+ {
+ 	if (mode == 1)
+-		printf("       scanning usb for storage devices... ");
++		printf("       поиск накопителей USB... ");
+ 
+ #if !CONFIG_IS_ENABLED(DM_USB)
+ 	unsigned char i;
+@@ -335,7 +335,7 @@ int usb_stor_scan(int mode)
+ 
+ 	usb_disable_asynch(0); /* asynch transfer allowed */
+ #endif
+-	printf("%d Storage Device(s) found\n", usb_max_devs);
++	printf("найдено накопителей: %d\n", usb_max_devs);
+ 	if (usb_max_devs > 0)
+ 		return 0;
+ 	return -1;
+diff --git a/configs/sumavision-q5_defconfig b/configs/sumavision-q5_defconfig
+index c9d93566..f24f25fe 100644
+--- a/configs/sumavision-q5_defconfig
++++ b/configs/sumavision-q5_defconfig
+@@ -13,7 +13,7 @@ CONFIG_MESON_GXL=y
+ CONFIG_SYS_LOAD_ADDR=0x1000000
+ CONFIG_DEBUG_UART_BASE=0xc81004c0
+ CONFIG_DEBUG_UART_CLOCK=24000000
+-CONFIG_IDENT_STRING=" sumavision-q5 special for Irene VA from Wint"
++CONFIG_IDENT_STRING=" загрузчик sumavision-q5 собран Wint для голосового помощника Руслана"
+ CONFIG_DEBUG_UART=y
+ CONFIG_REMAKE_ELF=y
+ CONFIG_FIT=y
+@@ -54,3 +54,7 @@ CONFIG_USB_XHCI_DWC3=y
+ CONFIG_USB_DWC3=y
+ CONFIG_USB_DWC3_MESON_GXL=y
+ # CONFIG_TOOLS_MKEFICAPSULE is not set
++CONFIG_BOOTDELAY=3
++CONFIG_AUTOBOOT_KEYED=y
++CONFIG_AUTOBOOT_PROMPT="Автозагрузка через %d с. Чтобы остановить, нажмите Ctrl+C\n"
++CONFIG_AUTOBOOT_STOP_STR="\x03"
+diff --git a/disk/part.c b/disk/part.c
+index 4923dc44..b28523df 100644
+--- a/disk/part.c
++++ b/disk/part.c
+@@ -571,7 +571,7 @@ int blk_get_device_part_str(const char *ifname, const char *dev_part_str,
+ 		 * it's an error.
+ 		 */
+ 		if ((part > 0) || (!allow_whole_dev)) {
+-			printf("** No partition table - %s %s **\n", ifname,
++			printf("** Нет таблицы разделов: %s %s **\n", ifname,
+ 			       dev_str);
+ 			ret = -EPROTONOSUPPORT;
+ 			goto cleanup;
+@@ -803,7 +803,7 @@ int part_get_info_by_dev_and_name_or_num(const char *dev_iface,
+ 	ret = blk_get_device_part_str(dev_iface, dev_part_str, desc, part_info,
+ 				      allow_whole_dev);
+ 	if (ret < 0)
+-		printf("Couldn't find partition %s %s\n",
++		printf("Раздел не найден: %s %s\n",
+ 		       dev_iface, dev_part_str);
+ 	return ret;
+ }
+diff --git a/drivers/block/blk-uclass.c b/drivers/block/blk-uclass.c
+index 73c24fd9..1fabf9e2 100644
+--- a/drivers/block/blk-uclass.c
++++ b/drivers/block/blk-uclass.c
+@@ -306,7 +306,7 @@ int blk_show_device(enum uclass_id uclass_id, int devnum)
+ 	printf("\nDevice %d: ", devnum);
+ 	ret = blk_get_desc(uclass_id, devnum, &desc);
+ 	if (ret == -ENODEV || ret == -ENOENT) {
+-		printf("unknown device\n");
++		printf("неизвестное устройство\n");
+ 		return -ENODEV;
+ 	}
+ 	if (ret)
+diff --git a/drivers/mmc/mmc.c b/drivers/mmc/mmc.c
+index 670e92ee..5356db27 100644
+--- a/drivers/mmc/mmc.c
++++ b/drivers/mmc/mmc.c
+@@ -3040,7 +3040,7 @@ retry:
+ 		if (err) {
+ #if !defined(CONFIG_XPL_BUILD) || defined(CONFIG_SPL_LIBCOMMON_SUPPORT)
+ 			if (!quiet)
+-				log_err("Card did not respond to voltage select! : %d\n",
++				log_err("Карта не ответила на выбор напряжения: %d\n",
+ 					err);
+ #endif
+ 			return -EOPNOTSUPP;
+diff --git a/drivers/net/designware.c b/drivers/net/designware.c
+index 6ed9c6d5..40c3b638 100644
+--- a/drivers/net/designware.c
++++ b/drivers/net/designware.c
+@@ -594,7 +594,7 @@ int designware_eth_init(struct dw_eth_dev *priv, u8 *enetaddr)
+ 	/* Start up the PHY */
+ 	ret = phy_startup(priv->phydev);
+ 	if (ret) {
+-		printf("Could not initialize PHY %s\n",
++		printf("Не удалось инициализировать PHY %s\n",
+ 		       priv->phydev->dev->name);
+ 		return ret;
+ 	}
+diff --git a/drivers/net/phy/phy.c b/drivers/net/phy/phy.c
+index f2e9b2a9..d97b0584 100644
+--- a/drivers/net/phy/phy.c
++++ b/drivers/net/phy/phy.c
+@@ -245,20 +245,20 @@ int genphy_update_link(struct phy_device *phydev)
+ 		u32 aneg_timeout = env_get_ulong("phy_aneg_timeout", 10,
+ 						 CONFIG_PHY_ANEG_TIMEOUT);
+ 
+-		printf("%s Waiting for PHY auto negotiation to complete",
++		printf("%s Ожидание согласования скорости сети",
+ 		       phydev->dev->name);
+ 		while (!(mii_reg & BMSR_ANEGCOMPLETE)) {
+ 			/*
+ 			 * Timeout reached ?
+ 			 */
+ 			if (i > (aneg_timeout / 50)) {
+-				printf(" TIMEOUT !\n");
++				printf(" ВРЕМЯ ИСТЕКЛО (кабель подключён?)\n");
+ 				phydev->link = 0;
+ 				return -ETIMEDOUT;
+ 			}
+ 
+ 			if (ctrlc()) {
+-				puts("user interrupt!\n");
++				puts("прервано пользователем\n");
+ 				phydev->link = 0;
+ 				return -EINTR;
+ 			}
+@@ -269,7 +269,7 @@ int genphy_update_link(struct phy_device *phydev)
+ 			mii_reg = phy_read(phydev, MDIO_DEVAD_NONE, MII_BMSR);
+ 			mdelay(50);	/* 50 ms */
+ 		}
+-		printf(" done\n");
++		printf(" готово\n");
+ 		phydev->link = 1;
+ 	} else {
+ 		/* Read the link a second time to clear the latched state */
+diff --git a/drivers/usb/host/usb-uclass.c b/drivers/usb/host/usb-uclass.c
+index 1c74d6fd..b1cc95cf 100644
+--- a/drivers/usb/host/usb-uclass.c
++++ b/drivers/usb/host/usb-uclass.c
+@@ -364,7 +364,7 @@ static void usb_report_devices(struct uclass *uc)
+ 		if (priv->next_addr == 0)
+ 			printf("No USB Device found\n");
+ 		else
+-			printf("%d USB Device(s) found\n", priv->next_addr);
++			printf("найдено устройств USB: %d\n", priv->next_addr);
+ 	}
+ }
+ 
+diff --git a/env/common.c b/env/common.c
+index b2adbe93..f0e2a8d5 100644
+--- a/env/common.c
++++ b/env/common.c
+@@ -253,7 +253,7 @@ char *from_env(const char *envvar)
+ 	ret = env_get(envvar);
+ 
+ 	if (!ret)
+-		printf("missing environment variable: %s\n", envvar);
++		printf("нет переменной окружения: %s\n", envvar);
+ 
+ 	return ret;
+ }
+diff --git a/env/env.c b/env/env.c
+index 404e8b7a..8e7dd7a3 100644
+--- a/env/env.c
++++ b/env/env.c
+@@ -189,7 +189,7 @@ int env_load(void)
+ 		if (!env_has_inited(drv->location))
+ 			continue;
+ 
+-		printf("Loading Environment from %s...\r", drv->name);
++		printf("Загрузка переменных окружения из %s...\r", drv->name);
+ 		/*
+ 		 * In error case, the error message must be printed during
+ 		 * drv->load() in some underlying API, and it must be exactly
+@@ -197,7 +197,7 @@ int env_load(void)
+ 		 */
+ 		ret = drv->load();
+ 		if (!ret) {
+-			printf("Loading Environment from %s... OK\n", drv->name);
++			printf("Загрузка переменных окружения из %s... OK\n", drv->name);
+ 			gd->env_load_prio = prio;
+ 
+ 			return 0;
+diff --git a/include/configs/meson64.h b/include/configs/meson64.h
+index f3275b37..de4c8e14 100644
+--- a/include/configs/meson64.h
++++ b/include/configs/meson64.h
+@@ -46,7 +46,7 @@
+ 	"bootcmd_romusb=" \
+ 		"if test \"${boot_source}\" = \"usb\" && " \
+ 				"test -n \"${scriptaddr}\"; then " \
+-			"echo '(ROM USB boot)'; " \
++			"echo '(загрузка по USB из ROM)'; " \
+ 			"source ${scriptaddr}; " \
+ 		"fi\0"
+ 
+diff --git a/net/bootp.c b/net/bootp.c
+index f0dc329d..e4e5d8e0 100644
+--- a/net/bootp.c
++++ b/net/bootp.c
+@@ -769,7 +769,7 @@ void bootp_request(void)
+ 
+ #endif	/* CONFIG_BOOTP_RANDOM_DELAY */
+ 
+-	printf("BOOTP broadcast %d\n", ++bootp_try);
++	printf("Запрос BOOTP %d\n", ++bootp_try);
+ 	pkt = net_tx_packet;
+ 	memset((void *)pkt, 0, PKTSIZE);
+ 
+-- 
+2.43.0
+

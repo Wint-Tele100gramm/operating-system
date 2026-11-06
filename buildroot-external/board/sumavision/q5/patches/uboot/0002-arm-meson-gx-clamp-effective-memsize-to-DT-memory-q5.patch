@@ -1,0 +1,61 @@
+From 4f4d9e58ef709e60bed5a956b0d64b30607772ce Mon Sep 17 00:00:00 2001
+From: Sumavision Q5 build <q5@localhost>
+Date: Tue, 3 Nov 2026 23:29:04 +0300
+Subject: [PATCH 2/5] arm: meson: gx: clamp effective memsize to DT memory; q5
+ banner
+
+---
+ arch/arm/mach-meson/board-gx.c  | 15 ++++++++++++++-
+ configs/sumavision-q5_defconfig |  2 +-
+ 2 files changed, 15 insertions(+), 2 deletions(-)
+
+diff --git a/arch/arm/mach-meson/board-gx.c b/arch/arm/mach-meson/board-gx.c
+index d5c506df..80aa9a9d 100644
+--- a/arch/arm/mach-meson/board-gx.c
++++ b/arch/arm/mach-meson/board-gx.c
+@@ -15,6 +15,9 @@
+ #include <asm/armv8/mmu.h>
+ #include <linux/printk.h>
+ #include <linux/sizes.h>
++#include <asm/global_data.h>
++
++DECLARE_GLOBAL_DATA_PTR;
+ 
+ int meson_get_boot_device(void)
+ {
+@@ -74,8 +77,18 @@ void meson_init_reserved_memory(void *fdt)
+ phys_size_t get_effective_memsize(void)
+ {
+ 	/* Size is reported in MiB, convert it in bytes */
+-	return ((readl(GX_AO_SEC_GP_CFG0) & GX_AO_MEM_SIZE_MASK)
++	phys_size_t size = ((readl(GX_AO_SEC_GP_CFG0) & GX_AO_MEM_SIZE_MASK)
+ 			>> GX_AO_MEM_SIZE_SHIFT) * SZ_1M;
++
++	/*
++	 * Some vendor BL2 builds (e.g. the P212 one) report the size the
++	 * board was designed for rather than the size actually detected.
++	 * Never go beyond the memory described in the device tree.
++	 */
++	if (gd->ram_size && (!size || size > gd->ram_size))
++		size = gd->ram_size;
++
++	return size;
+ }
+ 
+ static struct mm_region gx_mem_map[] = {
+diff --git a/configs/sumavision-q5_defconfig b/configs/sumavision-q5_defconfig
+index 21b43b03..c9d93566 100644
+--- a/configs/sumavision-q5_defconfig
++++ b/configs/sumavision-q5_defconfig
+@@ -13,7 +13,7 @@ CONFIG_MESON_GXL=y
+ CONFIG_SYS_LOAD_ADDR=0x1000000
+ CONFIG_DEBUG_UART_BASE=0xc81004c0
+ CONFIG_DEBUG_UART_CLOCK=24000000
+-CONFIG_IDENT_STRING=" sumavision-q5"
++CONFIG_IDENT_STRING=" sumavision-q5 special for Irene VA from Wint"
+ CONFIG_DEBUG_UART=y
+ CONFIG_REMAKE_ELF=y
+ CONFIG_FIT=y
+-- 
+2.43.0
+

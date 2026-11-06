@@ -1,3 +1,3 @@
-# U-Boot (jethub_j80 defconfig) hardcodes the JetHub J80 device tree,
-# point it to the Sumavision Q5 one instead.
+# The Q5 U-Boot already defaults to this device tree; kept explicit so that
+# the boot partition stays self-describing.
 fdtfile=amlogic/meson-gxl-s905m2-sumavision-q5.dtb

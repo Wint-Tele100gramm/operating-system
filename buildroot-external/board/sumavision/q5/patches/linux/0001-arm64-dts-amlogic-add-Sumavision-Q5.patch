@@ -18,10 +18,10 @@ index e96c1e0..f7b3430 100644
  dtb-$(CONFIG_ARCH_MESON) += meson-gxl-s905w-tx3-mini.dtb
 diff --git a/arch/arm64/boot/dts/amlogic/meson-gxl-s905m2-sumavision-q5.dts b/arch/arm64/boot/dts/amlogic/meson-gxl-s905m2-sumavision-q5.dts
 new file mode 100644
-index 0000000..ef21508
+index 0000000..4f572df
 --- /dev/null
 +++ b/arch/arm64/boot/dts/amlogic/meson-gxl-s905m2-sumavision-q5.dts
-@@ -0,0 +1,239 @@
+@@ -0,0 +1,253 @@
 +// SPDX-License-Identifier: (GPL-2.0+ OR MIT)
 +/*
 + * Sumavision Q5 (Amlogic S905M2 / GXL, 1 GB RAM, 8 GB eMMC)
@@ -29,7 +29,8 @@ index 0000000..ef21508
 + * Собрано по заводскому дереву gxl_p215_1g и mainline-описаниям
 + * P212 / LibreTech-CC / JetHub J80.
 + *
-+ *  - Wi-Fi/BT: FN-Link 6222B-SRB (RTL8822BS), SDIO + UART_A
++ *  - Wi-Fi/BT: FN-Link 6222B-SRB (RTL8822BS) или, в части партий, RTL8822CS; SDIO + UART_A.
++ *    Wi-Fi определяется по SDIO ID, Bluetooth - btrtl по hci_rev, один узел подходит обоим.
 + *  - Ethernet: встроенный 10/100 PHY, трансформатор PSF-16211
 + *  - Аналоговый звук: внутренний ЦАП (ACODEC) -> DIO2128 -> 4-контактный джек
 + *  - Композитное видео (CVBS) на том же джеке
@@ -242,6 +243,19 @@ index 0000000..ef21508
 +		compatible = "realtek,rtl8822bs-bt";
 +		enable-gpios = <&gpio GPIOX_17 GPIO_ACTIVE_HIGH>;
 +	};
++};
++
++/*
++ * SDIO (RTL8822BS / RTL8822CS): UHS-I up to SDR104 at 100 MHz, as Armbian sets
++ * for p212 boards (meson-gxl-gxm ... SDIO-to-100MHz patch). Verified on the Q5
++ * with rtw88_8822cs in SDR104.
++ */
++&sd_emmc_a {
++	sd-uhs-sdr12;
++	sd-uhs-sdr25;
++	sd-uhs-sdr50;
++	sd-uhs-sdr104;
++	max-frequency = <100000000>;
 +};
 +
 +/*
