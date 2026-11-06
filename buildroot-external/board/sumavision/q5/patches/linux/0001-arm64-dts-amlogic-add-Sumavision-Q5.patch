@@ -1,0 +1,263 @@
+From: Wint <Wint-Tele100gramm@users.noreply.github.com>
+Subject: [PATCH] arm64: dts: amlogic: add Sumavision Q5 (S905M2)
+
+Sumavision Q5: Amlogic S905M2 (GXL), 1 GB RAM, 8 GB eMMC,
+RTL8822BS (SDIO Wi-Fi + UART Bluetooth), internal 10/100 PHY.
+---
+diff --git a/arch/arm64/boot/dts/amlogic/Makefile b/arch/arm64/boot/dts/amlogic/Makefile
+index e96c1e0..f7b3430 100644
+--- a/arch/arm64/boot/dts/amlogic/Makefile
++++ b/arch/arm64/boot/dts/amlogic/Makefile
+@@ -60,6 +60,7 @@ dtb-$(CONFIG_ARCH_MESON) += meson-gxl-s905d-p231.dtb
+ dtb-$(CONFIG_ARCH_MESON) += meson-gxl-s905d-phicomm-n1.dtb
+ dtb-$(CONFIG_ARCH_MESON) += meson-gxl-s905d-sml5442tw.dtb
+ dtb-$(CONFIG_ARCH_MESON) += meson-gxl-s905d-vero4k-plus.dtb
++dtb-$(CONFIG_ARCH_MESON) += meson-gxl-s905m2-sumavision-q5.dtb
+ dtb-$(CONFIG_ARCH_MESON) += meson-gxl-s905w-jethome-jethub-j80.dtb
+ dtb-$(CONFIG_ARCH_MESON) += meson-gxl-s905w-p281.dtb
+ dtb-$(CONFIG_ARCH_MESON) += meson-gxl-s905w-tx3-mini.dtb
+diff --git a/arch/arm64/boot/dts/amlogic/meson-gxl-s905m2-sumavision-q5.dts b/arch/arm64/boot/dts/amlogic/meson-gxl-s905m2-sumavision-q5.dts
+new file mode 100644
+index 0000000..ef21508
+--- /dev/null
++++ b/arch/arm64/boot/dts/amlogic/meson-gxl-s905m2-sumavision-q5.dts
+@@ -0,0 +1,239 @@
++// SPDX-License-Identifier: (GPL-2.0+ OR MIT)
++/*
++ * Sumavision Q5 (Amlogic S905M2 / GXL, 1 GB RAM, 8 GB eMMC)
++ *
++ * Собрано по заводскому дереву gxl_p215_1g и mainline-описаниям
++ * P212 / LibreTech-CC / JetHub J80.
++ *
++ *  - Wi-Fi/BT: FN-Link 6222B-SRB (RTL8822BS), SDIO + UART_A
++ *  - Ethernet: встроенный 10/100 PHY, трансформатор PSF-16211
++ *  - Аналоговый звук: внутренний ЦАП (ACODEC) -> DIO2128 -> 4-контактный джек
++ *  - Композитное видео (CVBS) на том же джеке
++ *  - HDMI, SPDIF (GPIOH_4)
++ */
++
++/dts-v1/;
++
++#include "meson-gxl-s905x-p212.dtsi"
++#include <dt-bindings/input/input.h>
++#include <dt-bindings/leds/common.h>
++#include <dt-bindings/sound/meson-aiu.h>
++
++/ {
++	compatible = "sumavision,q5", "amlogic,s905w", "amlogic,meson-gxl";
++	model = "Sumavision Q5";
++
++	memory@0 {
++		device_type = "memory";
++		reg = <0x0 0x0 0x0 0x40000000>;
++	};
++
++	/* Линейный драйвер DIO2128, enable на GPIOH_5 (в заводском дереве mute_gpio) */
++	dio2128: analog-amplifier {
++		compatible = "simple-audio-amplifier";
++		sound-name-prefix = "AU2";
++		VCC-supply = <&hdmi_5v>;
++		enable-gpios = <&gpio GPIOH_5 GPIO_ACTIVE_HIGH>;
++	};
++
++	spdif_dit: audio-codec-0 {
++		#sound-dai-cells = <0>;
++		compatible = "linux,spdif-dit";
++		sound-name-prefix = "DIT";
++	};
++
++	cvbs-connector {
++		compatible = "composite-video-connector";
++
++		port {
++			cvbs_connector_in: endpoint {
++				remote-endpoint = <&cvbs_vdac_out>;
++			};
++		};
++	};
++
++	hdmi-connector {
++		compatible = "hdmi-connector";
++		type = "a";
++
++		port {
++			hdmi_connector_in: endpoint {
++				remote-endpoint = <&hdmi_tx_tmds_out>;
++			};
++		};
++	};
++
++	/* Кнопка питания на GPIOAO_2 (заводской gpio_keypad) */
++	gpio-keys-polled {
++		compatible = "gpio-keys-polled";
++		poll-interval = <100>;
++
++		power-button {
++			label = "power";
++			linux,code = <KEY_POWER>;
++			gpios = <&gpio_ao GPIOAO_2 GPIO_ACTIVE_LOW>;
++		};
++	};
++
++	/*
++	 * Светодиоды взяты из заводского ledlight/meson-remote эталонной платы.
++	 * Какие из них реально распаяны на Q5 и их полярность - проверить.
++	 */
++	leds {
++		compatible = "gpio-leds";
++
++		led-power {
++			color = <LED_COLOR_ID_RED>;
++			function = LED_FUNCTION_POWER;
++			gpios = <&gpio GPIODV_24 GPIO_ACTIVE_LOW>;
++			default-state = "on";
++		};
++
++		led-status {
++			color = <LED_COLOR_ID_BLUE>;
++			function = LED_FUNCTION_STATUS;
++			gpios = <&gpio_ao GPIOAO_3 GPIO_ACTIVE_LOW>;
++			linux,default-trigger = "heartbeat";
++		};
++	};
++
++	sound {
++		compatible = "amlogic,gx-sound-card";
++		model = "SUMAVISION-Q5";
++		audio-aux-devs = <&dio2128>;
++		audio-widgets = "Line", "Lineout";
++		audio-routing = "AU2 INL", "ACODEC LOLN",
++				"AU2 INR", "ACODEC LORN",
++				"Lineout", "AU2 OUTL",
++				"Lineout", "AU2 OUTR";
++		clocks = <&clkc CLKID_MPLL0>,
++			 <&clkc CLKID_MPLL1>,
++			 <&clkc CLKID_MPLL2>;
++
++		assigned-clocks = <&clkc CLKID_MPLL0>,
++				  <&clkc CLKID_MPLL1>,
++				  <&clkc CLKID_MPLL2>;
++		assigned-clock-rates = <294912000>,
++				       <270950400>,
++				       <393216000>;
++
++		dai-link-0 {
++			sound-dai = <&aiu AIU_CPU CPU_I2S_FIFO>;
++		};
++
++		dai-link-1 {
++			sound-dai = <&aiu AIU_CPU CPU_SPDIF_FIFO>;
++		};
++
++		/* I2S -> HDMI и внутренний ЦАП */
++		dai-link-2 {
++			sound-dai = <&aiu AIU_CPU CPU_I2S_ENCODER>;
++			dai-format = "i2s";
++			mclk-fs = <256>;
++
++			codec-0 {
++				sound-dai = <&aiu AIU_HDMI CTRL_I2S>;
++			};
++
++			codec-1 {
++				sound-dai = <&aiu AIU_ACODEC CTRL_I2S>;
++			};
++		};
++
++		/* SPDIF-выход */
++		dai-link-3 {
++			sound-dai = <&aiu AIU_CPU CPU_SPDIF_ENCODER>;
++
++			codec-0 {
++				sound-dai = <&spdif_dit>;
++			};
++		};
++
++		dai-link-4 {
++			sound-dai = <&aiu AIU_HDMI CTRL_OUT>;
++
++			codec-0 {
++				sound-dai = <&hdmi_tx>;
++			};
++		};
++
++		dai-link-5 {
++			sound-dai = <&aiu AIU_ACODEC CTRL_OUT>;
++
++			codec-0 {
++				sound-dai = <&acodec>;
++			};
++		};
++	};
++};
++
++&acodec {
++	AVDD-supply = <&vddio_ao18>;
++	status = "okay";
++};
++
++&aiu {
++	status = "okay";
++	pinctrl-0 = <&spdif_out_h_pins>;
++	pinctrl-names = "default";
++};
++
++&cec_AO {
++	status = "okay";
++	pinctrl-0 = <&ao_cec_pins>;
++	pinctrl-names = "default";
++	hdmi-phandle = <&hdmi_tx>;
++};
++
++&cvbs_vdac_port {
++	cvbs_vdac_out: endpoint {
++		remote-endpoint = <&cvbs_connector_in>;
++	};
++};
++
++&hdmi_tx {
++	status = "okay";
++	pinctrl-0 = <&hdmi_hpd_pins>, <&hdmi_i2c_pins>;
++	pinctrl-names = "default";
++	hdmi-supply = <&hdmi_5v>;
++};
++
++&hdmi_tx_tmds_port {
++	hdmi_tx_tmds_out: endpoint {
++		remote-endpoint = <&hdmi_connector_in>;
++	};
++};
++
++/* Светодиоды на разъёме RJ45: GPIOZ_14/15, как в заводском eth_pins */
++&internal_phy {
++	pinctrl-0 = <&eth_link_led_pins>, <&eth_act_led_pins>;
++	pinctrl-names = "default";
++};
++
++/* Bluetooth части RTL8822BS: UART_A (GPIOX_12-15), сброс GPIOX_17 */
++&uart_A {
++	/delete-node/ bluetooth;
++
++	bluetooth {
++		compatible = "realtek,rtl8822bs-bt";
++		enable-gpios = <&gpio GPIOX_17 GPIO_ACTIVE_HIGH>;
++	};
++};
++
++/*
++ * eMMC SanDisk SDINBDG4-8G: HS200 даёт CRC-ошибку (-74), ядро всё равно откатывается на DDR52.
++ * В заводском дереве тоже только MMC_CAP_1_8V_DDR и 50 МГц - убираем попытку HS200.
++ */
++&sd_emmc_c {
++	/delete-property/ mmc-hs200-1_8v;
++};
++
++/* Порт OTG на Q5 используется только как хост (xHCI); dwc2 тут лишь пишет ошибку -22 */
++&dwc2 {
++	status = "disabled";
++};
++
++&usb {
++	status = "okay";
++	dr_mode = "host";
++};

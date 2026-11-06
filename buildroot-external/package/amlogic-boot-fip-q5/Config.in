@@ -1,0 +1,11 @@
+config BR2_PACKAGE_AMLOGIC_BOOT_FIP_Q5
+	bool "amlogic-boot-fip for Sumavision Q5"
+	depends on BR2_TARGET_UBOOT
+	help
+	  Builds the GXL FIP (u-boot.bin) for the Sumavision Q5 (S905M2)
+	  from the LibreELEC amlogic-boot-fip blobs: BL2/ACS/BL21 from
+	  the P212 reference board and BL30/BL301/BL31 from the JetHub J80
+	  directory. Newer J80 BL30 builds (gxl_v1.1.3382 and later) reset
+	  the S905M2 with "Wrong chip e0", gxl_v1.1.3243 works.
+
+	  https://github.com/LibreELEC/amlogic-boot-fip

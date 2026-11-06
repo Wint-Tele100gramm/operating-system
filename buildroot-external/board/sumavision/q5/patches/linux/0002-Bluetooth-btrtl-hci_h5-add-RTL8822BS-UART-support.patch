@@ -1,0 +1,84 @@
+From 528f46ef0ad3f50583f03f11a14b04c830fdd1d7 Mon Sep 17 00:00:00 2001
+From: Sumavision Q5 build <q5@localhost>
+Date: Tue, 3 Nov 2026 01:06:41 +0300
+Subject: [PATCH] Bluetooth: btrtl/hci_h5: add RTL8822BS UART support
+
+RTL8822BS (FN-Link 6222B-SRB) over UART reports hci_ver 0x7 like
+RTL8822BU. Add an UART entry, the realtek,rtl8822bs-bt compatible and
+the BROKEN_LOCAL_EXT_FEATURES_PAGE_2 quirk, same as in the 2023 series
+by Rudi Heitbaum.
+---
+ drivers/bluetooth/btrtl.c  | 18 +++++++++++++++++-
+ drivers/bluetooth/hci_h5.c |  6 ++++++
+ 2 files changed, 23 insertions(+), 1 deletion(-)
+
+diff --git a/drivers/bluetooth/btrtl.c b/drivers/bluetooth/btrtl.c
+index d298133..89d8e4a 100644
+--- a/drivers/bluetooth/btrtl.c
++++ b/drivers/bluetooth/btrtl.c
+@@ -266,7 +266,16 @@ static const struct id_table ic_id_table[] = {
+ 	  .cfg_name = "rtl_bt/rtl8822cu_config",
+ 	  .hw_info  = "rtl8822cu" },
+ 
+-	/* 8822B */
++	/* 8822B with UART interface */
++	{ IC_INFO(RTL_ROM_LMP_8822B, 0xb, 0x7, HCI_UART),
++	  .config_needed = true,
++	  .has_rom_version = true,
++	  .has_msft_ext = true,
++	  .fw_name  = "rtl_bt/rtl8822bs_fw",
++	  .cfg_name = "rtl_bt/rtl8822bs_config",
++	  .hw_info  = "rtl8822bs" },
++
++	/* 8822B with USB interface */
+ 	{ IC_INFO(RTL_ROM_LMP_8822B, 0xb, 0x7, HCI_USB),
+ 	  .config_needed = true,
+ 	  .has_rom_version = true,
+@@ -1350,6 +1359,11 @@ void btrtl_set_quirks(struct hci_dev *hdev, struct btrtl_device_info *btrtl_dev)
+ 		 */
+ 		hci_set_quirk(hdev, HCI_QUIRK_BROKEN_LOCAL_EXT_FEATURES_PAGE_2);
+ 		break;
++	case RTL_ROM_LMP_8822B:
++		/* 8822BS (UART) has the same problem with page 2 */
++		if (btrtl_dev->project_id == CHIP_ID_8822B)
++			hci_set_quirk(hdev, HCI_QUIRK_BROKEN_LOCAL_EXT_FEATURES_PAGE_2);
++		break;
+ 	default:
+ 		break;
+ 	}
+@@ -1546,6 +1560,8 @@ MODULE_FIRMWARE("rtl_bt/rtl8821cs_fw.bin");
+ MODULE_FIRMWARE("rtl_bt/rtl8821cs_config.bin");
+ MODULE_FIRMWARE("rtl_bt/rtl8822b_fw.bin");
+ MODULE_FIRMWARE("rtl_bt/rtl8822b_config.bin");
++MODULE_FIRMWARE("rtl_bt/rtl8822bs_fw.bin");
++MODULE_FIRMWARE("rtl_bt/rtl8822bs_config.bin");
+ MODULE_FIRMWARE("rtl_bt/rtl8822cs_fw.bin");
+ MODULE_FIRMWARE("rtl_bt/rtl8822cs_config.bin");
+ MODULE_FIRMWARE("rtl_bt/rtl8822cu_fw.bin");
+diff --git a/drivers/bluetooth/hci_h5.c b/drivers/bluetooth/hci_h5.c
+index 37f4d93..0472775 100644
+--- a/drivers/bluetooth/hci_h5.c
++++ b/drivers/bluetooth/hci_h5.c
+@@ -1116,6 +1116,10 @@ static const struct h5_device_data h5_data_rtl8822cs = {
+ 	.vnd = &rtl_vnd,
+ };
+ 
++static const struct h5_device_data h5_data_rtl8822bs = {
++	.vnd = &rtl_vnd,
++};
++
+ static const struct h5_device_data h5_data_rtl8723bs = {
+ 	.driver_info = H5_INFO_WAKEUP_DISABLE,
+ 	.vnd = &rtl_vnd,
+@@ -1140,6 +1144,8 @@ static const struct dev_pm_ops h5_serdev_pm_ops = {
+ 
+ static const struct of_device_id rtl_bluetooth_of_match[] = {
+ #ifdef CONFIG_BT_HCIUART_RTL
++	{ .compatible = "realtek,rtl8822bs-bt",
++	  .data = (const void *)&h5_data_rtl8822bs },
+ 	{ .compatible = "realtek,rtl8822cs-bt",
+ 	  .data = (const void *)&h5_data_rtl8822cs },
+ 	{ .compatible = "realtek,rtl8723bs-bt",
+-- 
+2.43.0
+
